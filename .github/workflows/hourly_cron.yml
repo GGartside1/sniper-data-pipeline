@@ -1,0 +1,44 @@
+name: Scheduled Hourly Ingestion
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  schedule:
+    # This cron expression maps to: Every hour, on the minute 0, Monday through Friday
+    # GitHub Action crons operate strictly in UTC time
+    - cron: '0 * * * 1-5'
+  workflow_dispatch: # Keeps a manual trigger button available for ad-hoc debugging
+
+jobs:
+  incremental_update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout Repository Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas numpy requests yfinance
+
+    - name: Execute Incremental Update
+      run: python hourly_update.py
+      env:
+        TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+
+    - name: Commit and Push Delta Row Updates
+      run: |
+        git config --global user.name "GitHub Action Bot"
+        git config --global user.email "actions@github.com"
+        git add data/raw_hourly_history.csv
+        git commit -m "Automated Ingestion: Appended scheduled hourly data rows [skip ci]" || echo "No fresh data packets detected to commit"
+        git push
