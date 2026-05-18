@@ -1,0 +1,41 @@
+name: One-Time History Seed
+
+# This line forces GitHub to run all actions using the newer Node 24 engine
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch: # This allows me to manually press a button to run it
+
+jobs:
+  seed_data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Saves the CSV back to your repo
+
+    steps:
+    - name: Checkout RepositoryCode
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas numpy requests yfinance
+
+    - name: Run Seeding Script
+      run: python seed_history.py
+      env:
+        TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+
+    - name: Commit and Push Historical CSV
+      run: |
+        git config --global user.name "GitHub Action Bot"
+        git config --global user.email "actions@github.com"
+        git add data/raw_hourly_history.csv
+        git commit -m "Automated Ingestion: Saved 5-year historical base file"
+        git push
