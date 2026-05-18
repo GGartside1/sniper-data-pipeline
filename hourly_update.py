@@ -25,7 +25,7 @@ if not os.path.exists(CSV_PATH):
 
 # Load existing history to prevent duplicates
 master_df = pd.read_csv(CSV_PATH)
-master_df['DateTime'] = pd.to_datetime(master_df['DateTime'])
+master_df['DateTime'] = pd.to_datetime(master_df['DateTime'], format='mixed')
 
 new_rows = []
 
