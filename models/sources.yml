@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: sniper_raw
+    database: SNIPER_DB
+    schema: RAW
+    tables:
+      - name: HISTORICAL_LEADERBOARD
