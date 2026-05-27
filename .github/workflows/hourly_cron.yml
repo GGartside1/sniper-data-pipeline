@@ -5,10 +5,19 @@ env:
 
 on:
   schedule:
-    # This cron expression maps to: Every hour, on the minute 0, Monday through Friday
-    # GitHub Action crons operate strictly in UTC time
+    # ----------------------------------------------------------------------
+    # 1. SUNDAY OPENING WINDOW (UTC Time)
+    # Fires every hour at minute 0, between 21:00 and 23:00, strictly on Sunday (0)
+    # ----------------------------------------------------------------------
+    - cron: '0 21-23 * * 0'
+
+    # ----------------------------------------------------------------------
+    # 2. STANDARD WEEKDAY RUNS (UTC Time)
+    # Fires every hour at minute 0, all day long, Monday through Friday (1-5)
+    # ----------------------------------------------------------------------
     - cron: '0 * * * 1-5'
-  workflow_dispatch: # Keeps a manual trigger button available for ad-hoc debugging
+    
+  workflow_dispatch: # Keeps the manual trigger button available
 
 jobs:
   incremental_update:
