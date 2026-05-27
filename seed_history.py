@@ -10,10 +10,6 @@ API_KEY = os.getenv("TWELVE_DATA_API_KEY")
 
 if not API_KEY:
     print("⚠️ WARNING: 'TWELVE_DATA_API_KEY' environment variable not detected.")
-    print("If you are running locally in Codespaces, please temporarily paste your key below, or export it in your terminal:")
-    print("export TWELVE_DATA_API_KEY='your_actual_key_here'\n")
-    # Uncomment the line below to hardcode temporarily if needed for local runs:
-    # API_KEY = "YOUR_KEY_HERE"
 
 twwear_symbols = {
     "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
@@ -57,7 +53,7 @@ if API_KEY and not API_KEY.startswith("YOUR"):
         
         time.sleep(10)
 else:
-    print("⏭️ Skipping Twelve Data (No API Key set in terminal environment context).")
+    print("箱 Skipping Twelve Data (No API Key set).")
 
 # ==========================================
 # 2. FETCH INDICES & GOLD HOURLY (yfinance)
@@ -66,16 +62,15 @@ for name in yf_hourly_targets:
     ticker = yf_symbols[name]
     print(f"📥 Fetching Max Hourly History from yfinance: {name}")
     try:
-        h_df = yf.download(ticker, period="730d", interval="1h", progress=False)
+        # Pass group_by="ticker" to keep the sub-columns uniform
+        h_df = yf.download(ticker, period="730d", interval="1h", progress=False, group_by="ticker")
         if not h_df.empty:
-            # Flatten standard multiindex if present
             if isinstance(h_df.columns, pd.MultiIndex):
-                h_df.columns = h_df.columns.get_level_values(0)
+                h_df = h_df[ticker] if ticker in h_df.columns.levels[0] else h_df.droplevel(1, axis=1)
             
             h_df = h_df.reset_index()
-            # Standardize column naming variations safely
-            h_df.columns = [str(col).capitalize() for col in h_df.columns]
-            h_df = h_df.rename(columns={'Datetime': 'DateTime', 'Date': 'DateTime'})
+            # Rename mapping handling case variations cleanly
+            h_df = h_df.rename(columns={'Datetime': 'DateTime', 'Date': 'DateTime', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close'})
             
             h_df = h_df.dropna(subset=['Close'])
             h_df['DateTime'] = pd.to_datetime(h_df['DateTime']).dt.tz_localize(None)
@@ -95,14 +90,13 @@ for name in yf_hourly_targets:
 for name, ticker in yf_symbols.items():
     print(f"📥 Fetching Max Weekly History from yfinance: {name}")
     try:
-        w_df = yf.download(ticker, period="max", interval="1wk", progress=False)
+        w_df = yf.download(ticker, period="max", interval="1wk", progress=False, group_by="ticker")
         if not w_df.empty:
             if isinstance(w_df.columns, pd.MultiIndex):
-                w_df.columns = w_df.columns.get_level_values(0)
+                w_df = w_df[ticker] if ticker in w_df.columns.levels[0] else w_df.droplevel(1, axis=1)
             
             w_df = w_df.reset_index()
-            w_df.columns = [str(col).capitalize() for col in w_df.columns]
-            w_df = w_df.rename(columns={'Date': 'DateTime', 'Datetime': 'DateTime'})
+            w_df = w_df.rename(columns={'Date': 'DateTime', 'Datetime': 'DateTime', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close'})
             
             w_df = w_df.dropna(subset=['Close'])
             w_df['DateTime'] = pd.to_datetime(w_df['DateTime']).dt.tz_localize(None)
