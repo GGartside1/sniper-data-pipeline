@@ -17,7 +17,7 @@ on:
     # ----------------------------------------------------------------------
     - cron: '0 * * * 1-5'
     
-  workflow_dispatch: # Keeps the manual trigger button available
+  workflow_dispatch: # Keeps the manual trigger button available for testing
 
 jobs:
   incremental_update:
@@ -27,10 +27,10 @@ jobs:
 
     steps:
     - name: Checkout Repository Code
-      uses: actions/checkout@v4.2.2
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v5.4.0
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
@@ -40,14 +40,15 @@ jobs:
         pip install pandas numpy requests yfinance
 
     - name: Execute Incremental Update
-      run: python hourly_update.py
       env:
         TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+      run: python hourly_update.py
 
     - name: Commit and Push Delta Row Updates
       run: |
         git config --global user.name "GitHub Action Bot"
         git config --global user.email "actions@github.com"
         git add data/raw_hourly_history.csv
+        # [skip ci] keeps your GitHub Actions runtime bills clear by ignoring automated code commits
         git commit -m "Automated Ingestion: Appended scheduled hourly data rows [skip ci]" || echo "No fresh data packets detected to commit"
         git push
