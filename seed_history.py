@@ -62,17 +62,16 @@ for asset_name in yf_hourly_targets:
     try:
         df = yf.download(ticker, period="730d", interval="1h", auto_adjust=False, progress=False, threads=False)
         if not df.empty:
-            # Flatten MultiIndex safely if present
+            # Drop multi-index only if yfinance bundled it as one
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
+            # Explicitly force the index name to 'DateTime' before resetting it
+            df.index.name = "DateTime"
             df = df.reset_index()
             
-            # Clean tuple strings or odd formatting back to clean string headers
-            df.columns = [str(col).replace("('", "").replace("', '')", "").split("',")[0].strip() for col in df.columns]
-            
-            # Case-insensitive normalization mapping
-            df = df.rename(columns={"Datetime": "DateTime", "Date": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
+            # Standardize standard column mappings
+            df = df.rename(columns={"open": "Open", "high": "High", "low": "Low", "close": "Close"})
             
             df["DateTime"] = pd.to_datetime(df["DateTime"]).dt.tz_localize(None)
             df["Instrument"] = asset_name
@@ -98,12 +97,12 @@ for asset_name, ticker in yf_symbols.items():
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
+            # Explicitly force the index name to 'DateTime' before resetting it
+            df.index.name = "DateTime"
             df = df.reset_index()
             
-            # Clean headers of tuple wrappers
-            df.columns = [str(col).replace("('", "").replace("', '')", "").split("',")[0].strip() for col in df.columns]
+            df = df.rename(columns={"open": "Open", "high": "High", "low": "Low", "close": "Close"})
             
-            df = df.rename(columns={"Date": "DateTime", "Datetime": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
             df["DateTime"] = pd.to_datetime(df["DateTime"]).dt.tz_localize(None)
             df["Instrument"] = asset_name
             df["TimeFrame"] = "1wk"
