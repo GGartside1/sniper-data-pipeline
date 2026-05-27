@@ -4,13 +4,13 @@ import requests
 import pandas as pd
 import numpy as np
 import yfinance as yf
-import traceback
 
 # ==========================================
 # CONFIGURATION
 # ==========================================
 API_KEY = os.getenv("TWELVE_DATA_API_KEY")
 
+# Mapping dictionaries to match your exact pipeline schema
 twelve_symbols = {
     "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
     "AUDUSD": "AUD/USD", "USDCAD": "USD/CAD", "USDCHF": "USD/CHF",
@@ -27,7 +27,7 @@ os.makedirs("data", exist_ok=True)
 all_data_frames = []
 
 # ==========================================
-# 1. FETCH FOREX HOURLY (TWELVE DATA)
+# 1. FETCH FOREX HOURLY (Twelve Data)
 # ==========================================
 if API_KEY and not API_KEY.startswith("YOUR"):
     for name, ticker in twelve_symbols.items():
@@ -37,44 +37,48 @@ if API_KEY and not API_KEY.startswith("YOUR"):
             response = requests.get(url, timeout=30).json()
             if "values" in response:
                 h_df = pd.DataFrame(response["values"])
+                
+                # Standardize schemas
                 h_df = h_df.rename(columns={"datetime": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
                 h_df[["Open", "High", "Low", "Close"]] = h_df[["Open", "High", "Low", "Close"]].apply(pd.to_numeric, errors="coerce")
                 h_df["DateTime"] = pd.to_datetime(h_df["DateTime"])
                 h_df["Instrument"] = name
                 h_df["TimeFrame"] = "1h"
                 h_df["Source"] = "TwelveData"
+                
                 h_df = h_df[["DateTime", "Open", "High", "Low", "Close", "Instrument", "TimeFrame", "Source"]].dropna(subset=["Close"])
                 all_data_frames.append(h_df)
-                print(f"✅ Retrieved {len(h_df)} hourly rows for {name}")
+                print(f"✅ Appended {len(h_df)} raw hourly rows for {name}")
+            else:
+                print(f"❌ Twelve Data API error for {name}: {response.get('message')}")
         except Exception as e:
             print(f"❌ Failed Twelve Data fetch for {name}: {e}")
         time.sleep(10)
 else:
-    print("⏭️ Skipping Twelve Data (No API key found).")
+    print("箱 Skipping Twelve Data (No API key found in environmental variables).")
 
 # ==========================================
-# 2. FETCH HOURLY YFINANCE DATA
+# 2. FETCH HOURLY INDICES & GOLD (yfinance)
 # ==========================================
 print("\n📥 Fetching hourly yfinance history...")
 for asset_name in yf_hourly_targets:
     ticker = yf_symbols[asset_name]
     print(f"📥 Fetching yfinance hourly: {asset_name} ({ticker})")
-    for attempt in range(3):
-        try:
-            # Set to 730d max hard limit allowed for 1h bar extraction
-            df = yf.download(ticker, period="730d", interval="1h", auto_adjust=False, progress=False, threads=False)
-            if df.empty:
-                continue
-                
+    try:
+        # 730d is the maximum hard historical lookback limit Yahoo allows for 1h intervals
+        df = yf.download(ticker, period="730d", interval="1h", auto_adjust=False, progress=False, threads=False)
+        if not df.empty:
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
-            # Reset index BEFORE inspecting names to make Date/Datetime an explicit column
+            # Reset the index first so the time data becomes a regular processable column
             df = df.reset_index()
-            df.columns = [str(col) for col in df.columns]
             
-            # Use case-insensitive checking for structural safety
+            # Use a case-insensitive match by forcing string conversions to catch Date vs Datetime anomalies safely
+            df.columns = [str(col) for col in df.columns]
             df = df.rename(columns={"Datetime": "DateTime", "Date": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
+            
+            # Clear exchange timezone shifts out so data merges cleanly down-funnel
             df["DateTime"] = pd.to_datetime(df["DateTime"]).dt.tz_localize(None)
             df["Instrument"] = asset_name
             df["TimeFrame"] = "1h"
@@ -82,33 +86,29 @@ for asset_name in yf_hourly_targets:
             
             df = df[["DateTime", "Open", "High", "Low", "Close", "Instrument", "TimeFrame", "Source"]].dropna(subset=["Close"])
             all_data_frames.append(df)
-            print(f"✅ Retrieved {len(df)} hourly rows for {ticker}")
-            break
-        except Exception as e:
-            print(f"⚠️ Attempt {attempt + 1} failed for {ticker}: {e}")
-            time.sleep(5)
-    time.sleep(10)
+            print(f"✅ Appended {len(df)} raw hourly rows for {asset_name}")
+    except Exception as e:
+        print(f"❌ Failed fetching hourly yfinance for {asset_name}: {e}")
+    time.sleep(5)
 
 # ==========================================
-# 3. FETCH WEEKLY YFINANCE DATA
+# 3. FETCH ALL ASSETS WEEKLY (yfinance)
 # ==========================================
 print("\n📥 Fetching weekly yfinance history...")
 for asset_name, ticker in yf_symbols.items():
-    print(f"📥 Fetching weekly: {asset_name} ({ticker})")
-    for attempt in range(3):
-        try:
-            df = yf.download(ticker, period="max", interval="1wk", auto_adjust=False, progress=False, threads=False)
-            if df.empty:
-                continue
-                
+    print(f"📥 Fetching yfinance weekly: {asset_name} ({ticker})")
+    try:
+        df = yf.download(ticker, period="5y", interval="1wk", auto_adjust=False, progress=False, threads=False)
+        if not df.empty:
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
-            # Reset index here to bring 'Date' into the columns array safely
+            # Bring index tracking down to the standard row frame matrix
             df = df.reset_index()
             df.columns = [str(col) for col in df.columns]
             
-            df = df.rename(columns={"Datetime": "DateTime", "Date": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
+            # Fix naming discrepancies safely
+            df = df.rename(columns={"Date": "DateTime", "Datetime": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
             df["DateTime"] = pd.to_datetime(df["DateTime"]).dt.tz_localize(None)
             df["Instrument"] = asset_name
             df["TimeFrame"] = "1wk"
@@ -116,19 +116,21 @@ for asset_name, ticker in yf_symbols.items():
             
             df = df[["DateTime", "Open", "High", "Low", "Close", "Instrument", "TimeFrame", "Source"]].dropna(subset=["Close"])
             all_data_frames.append(df)
-            print(f"✅ Retrieved {len(df)} weekly rows for {ticker}")
-            break
-        except Exception as e:
-            print(f"⚠️ Attempt {attempt + 1} failed for {ticker}: {e}")
-            time.sleep(5)
-    time.sleep(10)
+            print(f"✅ Appended {len(df)} raw weekly rows for {asset_name}")
+    except Exception as e:
+        print(f"❌ Failed fetching weekly yfinance for {asset_name}: {e}")
+    time.sleep(5)
 
 # ==========================================
-# 4. SAVE COMPILED FILE
+# 4. CONCATENATE & SAVE CLEAR HISTORICAL BASE
 # ==========================================
 if all_data_frames:
     master_historical_df = pd.concat(all_data_frames, ignore_index=True)
     master_historical_df = master_historical_df.dropna(subset=["DateTime", "Open", "Close"])
     master_historical_df = master_historical_df.sort_values(["Instrument", "TimeFrame", "DateTime"])
-    master_historical_df.to_csv(os.path.join("data", "raw_hourly_history.csv"), index=False)
-    print(f"\n🚀 SUCCESS: Database cleanly compiled with {len(master_historical_df)} total mixed rows.")
+    
+    output_path = os.path.join("data", "raw_hourly_history.csv")
+    master_historical_df.to_csv(output_path, index=False)
+    print(f"\n🚀 PIPELINE SUCCESS: Raw storage compiled with {len(master_historical_df)} uniform asset rows.")
+else:
+    print("❌ Critical Failure: Zero records were compiled.")
