@@ -10,7 +10,6 @@ import yfinance as yf
 # ==========================================
 API_KEY = os.getenv("TWELVE_DATA_API_KEY")
 
-# Mapping dictionaries to match your exact pipeline schema
 twelve_symbols = {
     "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
     "AUDUSD": "AUD/USD", "USDCAD": "USD/CAD", "USDCHF": "USD/CHF",
@@ -37,8 +36,6 @@ if API_KEY and not API_KEY.startswith("YOUR"):
             response = requests.get(url, timeout=30).json()
             if "values" in response:
                 h_df = pd.DataFrame(response["values"])
-                
-                # Standardize schemas
                 h_df = h_df.rename(columns={"datetime": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
                 h_df[["Open", "High", "Low", "Close"]] = h_df[["Open", "High", "Low", "Close"]].apply(pd.to_numeric, errors="coerce")
                 h_df["DateTime"] = pd.to_datetime(h_df["DateTime"])
@@ -48,14 +45,12 @@ if API_KEY and not API_KEY.startswith("YOUR"):
                 
                 h_df = h_df[["DateTime", "Open", "High", "Low", "Close", "Instrument", "TimeFrame", "Source"]].dropna(subset=["Close"])
                 all_data_frames.append(h_df)
-                print(f"✅ Appended {len(h_df)} raw hourly rows for {name}")
-            else:
-                print(f"❌ Twelve Data API error for {name}: {response.get('message')}")
+                print(f"✅ Appended {len(h_df)} Twelve Data rows for {name}")
         except Exception as e:
             print(f"❌ Failed Twelve Data fetch for {name}: {e}")
         time.sleep(10)
 else:
-    print("箱 Skipping Twelve Data (No API key found in environmental variables).")
+    print("⏭️ Skipping Twelve Data (No API key found).")
 
 # ==========================================
 # 2. FETCH HOURLY INDICES & GOLD (yfinance)
@@ -65,20 +60,20 @@ for asset_name in yf_hourly_targets:
     ticker = yf_symbols[asset_name]
     print(f"📥 Fetching yfinance hourly: {asset_name} ({ticker})")
     try:
-        # 730d is the maximum hard historical lookback limit Yahoo allows for 1h intervals
         df = yf.download(ticker, period="730d", interval="1h", auto_adjust=False, progress=False, threads=False)
         if not df.empty:
+            # Flatten MultiIndex safely if present
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
-            # Reset the index first so the time data becomes a regular processable column
             df = df.reset_index()
             
-            # Use a case-insensitive match by forcing string conversions to catch Date vs Datetime anomalies safely
-            df.columns = [str(col) for col in df.columns]
+            # Clean tuple strings or odd formatting back to clean string headers
+            df.columns = [str(col).replace("('", "").replace("', '')", "").split("',")[0].strip() for col in df.columns]
+            
+            # Case-insensitive normalization mapping
             df = df.rename(columns={"Datetime": "DateTime", "Date": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
             
-            # Clear exchange timezone shifts out so data merges cleanly down-funnel
             df["DateTime"] = pd.to_datetime(df["DateTime"]).dt.tz_localize(None)
             df["Instrument"] = asset_name
             df["TimeFrame"] = "1h"
@@ -86,7 +81,7 @@ for asset_name in yf_hourly_targets:
             
             df = df[["DateTime", "Open", "High", "Low", "Close", "Instrument", "TimeFrame", "Source"]].dropna(subset=["Close"])
             all_data_frames.append(df)
-            print(f"✅ Appended {len(df)} raw hourly rows for {asset_name}")
+            print(f"✅ Appended {len(df)} hourly rows for {asset_name}")
     except Exception as e:
         print(f"❌ Failed fetching hourly yfinance for {asset_name}: {e}")
     time.sleep(5)
@@ -103,11 +98,11 @@ for asset_name, ticker in yf_symbols.items():
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
-            # Bring index tracking down to the standard row frame matrix
             df = df.reset_index()
-            df.columns = [str(col) for col in df.columns]
             
-            # Fix naming discrepancies safely
+            # Clean headers of tuple wrappers
+            df.columns = [str(col).replace("('", "").replace("', '')", "").split("',")[0].strip() for col in df.columns]
+            
             df = df.rename(columns={"Date": "DateTime", "Datetime": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
             df["DateTime"] = pd.to_datetime(df["DateTime"]).dt.tz_localize(None)
             df["Instrument"] = asset_name
@@ -116,13 +111,13 @@ for asset_name, ticker in yf_symbols.items():
             
             df = df[["DateTime", "Open", "High", "Low", "Close", "Instrument", "TimeFrame", "Source"]].dropna(subset=["Close"])
             all_data_frames.append(df)
-            print(f"✅ Appended {len(df)} raw weekly rows for {asset_name}")
+            print(f"✅ Appended {len(df)} weekly rows for {asset_name}")
     except Exception as e:
         print(f"❌ Failed fetching weekly yfinance for {asset_name}: {e}")
     time.sleep(5)
 
 # ==========================================
-# 4. CONCATENATE & SAVE CLEAR HISTORICAL BASE
+# 4. CONCATENATE & SAVE
 # ==========================================
 if all_data_frames:
     master_historical_df = pd.concat(all_data_frames, ignore_index=True)
