@@ -8,10 +8,7 @@ import yfinance as yf
 # --- CONFIGURATION ---
 API_KEY = os.getenv("TWELVE_DATA_API_KEY")
 
-if not API_KEY:
-    print("⚠️ WARNING: 'TWELVE_DATA_API_KEY' environment variable not detected.")
-
-twwear_symbols = {
+twelve_symbols = {
     "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
     "AUDUSD": "AUD/USD", "USDCAD": "USD/CAD", "USDCHF": "USD/CHF",
 }
@@ -31,7 +28,7 @@ all_data_frames = []
 # 1. FETCH FOREX HOURLY (Twelve Data)
 # ==========================================
 if API_KEY and not API_KEY.startswith("YOUR"):
-    for name, ticker in twwear_symbols.items():
+    for name, ticker in twelve_symbols.items():
         print(f"📥 Fetching Max Hourly History from Twelve Data: {name}")
         url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval=1h&outputsize=5000&apikey={API_KEY}"
         try:
@@ -53,62 +50,66 @@ if API_KEY and not API_KEY.startswith("YOUR"):
         
         time.sleep(10)
 else:
-    print("箱 Skipping Twelve Data (No API Key set).")
+    print("⏭️ Skipping Twelve Data (No API Key set).")
 
 # ==========================================
-# 2. FETCH INDICES & GOLD HOURLY (yfinance)
+# 2. FETCH INDICES & GOLD HOURLY (yfinance via Notebook Stack method)
 # ==========================================
-for name in yf_hourly_targets:
-    ticker = yf_symbols[name]
-    print(f"📥 Fetching Max Hourly History from yfinance: {name}")
-    try:
-        # Pass group_by="ticker" to keep the sub-columns uniform
-        h_df = yf.download(ticker, period="730d", interval="1h", progress=False, group_by="ticker")
-        if not h_df.empty:
-            if isinstance(h_df.columns, pd.MultiIndex):
-                h_df = h_df[ticker] if ticker in h_df.columns.levels[0] else h_df.droplevel(1, axis=1)
-            
-            h_df = h_df.reset_index()
-            # Rename mapping handling case variations cleanly
-            h_df = h_df.rename(columns={'Datetime': 'DateTime', 'Date': 'DateTime', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close'})
-            
-            h_df = h_df.dropna(subset=['Close'])
-            h_df['DateTime'] = pd.to_datetime(h_df['DateTime']).dt.tz_localize(None)
-            h_df['Instrument'] = name
-            h_df['TimeFrame'] = '1h'
-            h_df['Source'] = 'yfinance'
-            
-            h_df = h_df[['DateTime', 'Open', 'High', 'Low', 'Close', 'Instrument', 'TimeFrame', 'Source']]
-            all_data_frames.append(h_df)
-            print(f"✅ Retrieved {len(h_df)} hourly bars for {name}")
-    except Exception as e:
-        print(f"❌ Failed fetching yfinance hourly for {name}: {e}")
+print("📥 Fetching Bulk Hourly History from yfinance...")
+try:
+    hourly_tickers = [yf_symbols[name] for name in yf_hourly_targets]
+    # Download everything at once matching your notebook design patterns
+    raw_h_df = yf.download(hourly_tickers, period="730d", interval="1h", progress=False)
+    
+    if not raw_h_df.empty:
+        # Replicate your exact notebook stacking fix to flatten the MultiIndex layer
+        h_df = raw_h_df.stack(level=1, future_stack=True).reset_index()
+        
+        # Reverse map the symbols back to your asset names
+        inv_yf_symbols = {v: k for k, v in yf_symbols.items()}
+        h_df['Instrument'] = h_df['Ticker'].map(inv_yf_symbols)
+        
+        # Clean column remapping string adjustments
+        h_df = h_df.rename(columns={'Datetime': 'DateTime', 'Date': 'DateTime'})
+        h_df['DateTime'] = pd.to_datetime(h_df['DateTime']).dt.tz_localize(None)
+        h_df['TimeFrame'] = '1h'
+        h_df['Source'] = 'yfinance'
+        
+        # Isolate target constraints
+        h_df = h_df[['DateTime', 'Open', 'High', 'Low', 'Close', 'Instrument', 'TimeFrame', 'Source']]
+        h_df = h_df.dropna(subset=['Close'])
+        
+        all_data_frames.append(h_df)
+        print(f"✅ Bulk Hourly Retrieval Complete. Processed bars.")
+except Exception as e:
+    print(f"❌ Failed bulk yfinance hourly processing calculation layout: {e}")
 
 # ==========================================
-# 3. FETCH ALL ASSETS WEEKLY (yfinance)
+# 3. FETCH ALL ASSETS WEEKLY (yfinance via Notebook Stack method)
 # ==========================================
-for name, ticker in yf_symbols.items():
-    print(f"📥 Fetching Max Weekly History from yfinance: {name}")
-    try:
-        w_df = yf.download(ticker, period="max", interval="1wk", progress=False, group_by="ticker")
-        if not w_df.empty:
-            if isinstance(w_df.columns, pd.MultiIndex):
-                w_df = w_df[ticker] if ticker in w_df.columns.levels[0] else w_df.droplevel(1, axis=1)
-            
-            w_df = w_df.reset_index()
-            w_df = w_df.rename(columns={'Date': 'DateTime', 'Datetime': 'DateTime', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close'})
-            
-            w_df = w_df.dropna(subset=['Close'])
-            w_df['DateTime'] = pd.to_datetime(w_df['DateTime']).dt.tz_localize(None)
-            w_df['Instrument'] = name
-            w_df['TimeFrame'] = '1wk'
-            w_df['Source'] = 'yfinance'
-            
-            w_df = w_df[['DateTime', 'Open', 'High', 'Low', 'Close', 'Instrument', 'TimeFrame', 'Source']]
-            all_data_frames.append(w_df)
-            print(f"✅ Retrieved {len(w_df)} weekly bars for {name}")
-    except Exception as e:
-        print(f"❌ Failed fetching yfinance weekly for {name}: {e}")
+print("📥 Fetching Bulk Weekly History from yfinance...")
+try:
+    weekly_tickers = list(yf_symbols.values())
+    raw_w_df = yf.download(weekly_tickers, period="max", interval="1wk", progress=False)
+    
+    if not raw_w_df.empty:
+        w_df = raw_w_df.stack(level=1, future_stack=True).reset_index()
+        
+        inv_yf_symbols = {v: k for k, v in yf_symbols.items()}
+        w_df['Instrument'] = w_df['Ticker'].map(inv_yf_symbols)
+        
+        w_df = w_df.rename(columns={'Date': 'DateTime', 'Datetime': 'DateTime'})
+        w_df['DateTime'] = pd.to_datetime(w_df['DateTime']).dt.tz_localize(None)
+        w_df['TimeFrame'] = '1wk'
+        w_df['Source'] = 'yfinance'
+        
+        w_df = w_df[['DateTime', 'Open', 'High', 'Low', 'Close', 'Instrument', 'TimeFrame', 'Source']]
+        w_df = w_df.dropna(subset=['Close'])
+        
+        all_data_frames.append(w_df)
+        print(f"✅ Bulk Weekly Retrieval Complete. Processed bars.")
+except Exception as e:
+    print(f"❌ Failed bulk yfinance weekly processing calculation layout: {e}")
 
 # ==========================================
 # 4. SAVE COMPILED FILE TO RAW REPO STORAGE
