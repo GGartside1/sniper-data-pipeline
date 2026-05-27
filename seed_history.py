@@ -6,26 +6,21 @@ import time
 import yfinance as yf
 
 # --- CONFIGURATION ---
-# This line grabs the encrypted key securely from GitHub's vault at runtime
 API_KEY = os.getenv("TWELVE_DATA_API_KEY")
 
-# Twelve Data for Forex Hourly only
 twelve_symbols = {
     "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
     "AUDUSD": "AUD/USD", "USDCAD": "USD/CAD", "USDCHF": "USD/CHF",
 }
 
-# Yahoo Finance mapping for all assets (Weekly) and Indices/Gold (Hourly)
 yf_symbols = {
     "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "JPY=X",
     "AUDUSD": "AUDUSD=X", "USDCAD": "CAD=X", "USDCHF": "CHF=X",
     "XAUUSD": "GC=F", "SPX": "ES=F", "DAX": "^GDAXI"
 }
 
-# Target assets that use yfinance for hourly data
 yf_hourly_targets = ["XAUUSD", "SPX", "DAX"]
 
-# Ensure data directory exists
 os.makedirs("data", exist_ok=True)
 
 all_data_frames = []
@@ -60,17 +55,32 @@ for name, ticker in twelve_symbols.items():
 # ==========================================
 for name in yf_hourly_targets:
     ticker = yf_symbols[name]
-    print(f" Fetching Max Hourly History from yfinance: {name}")
+    print(f"📥 Fetching Max Hourly History from yfinance: {name}")
     try:
-        h_df = yf.download(ticker, period="730d", interval="1h", progress=False)
+        h_df = yf.download(ticker, period="730d", interval="1h", progress=False, group_by="ticker")
         if not h_df.empty:
+            # Safely handle yfinance multi-index responses
             if isinstance(h_df.columns, pd.MultiIndex):
-                h_df.columns = h_df.columns.get_level_values(0)
-            h_df = h_df.reset_index().rename(columns={'Datetime': 'DateTime'})
+                if ticker in h_df.columns.levels[0]:
+                    h_df = h_df[ticker]
+                else:
+                    h_df.columns = h_df.columns.get_level_values(0)
+            
+            h_df = h_df.dropna(subset=['Close'])
+            h_df = h_df.reset_index()
+            
+            # Catch varying case names for the index column ('Datetime' vs 'DateTime')
+            h_df = h_df.rename(columns={'Datetime': 'DateTime', 'Date': 'DateTime'})
+            
             h_df['DateTime'] = pd.to_datetime(h_df['DateTime']).dt.tz_localize(None)
             h_df['Instrument'] = name
             h_df['TimeFrame'] = '1h'
             h_df['Source'] = 'yfinance'
+            
+            # Clean up types explicitly
+            for col in ['Open', 'High', 'Low', 'Close']:
+                h_df[col] = pd.to_numeric(h_df[col])
+                
             h_df = h_df[['DateTime', 'Open', 'High', 'Low', 'Close', 'Instrument', 'TimeFrame', 'Source']]
             all_data_frames.append(h_df)
             print(f"✅ Retrieved {len(h_df)} hourly bars for {name}")
@@ -81,17 +91,28 @@ for name in yf_hourly_targets:
 # 3. FETCH ALL ASSETS WEEKLY (yfinance)
 # ==========================================
 for name, ticker in yf_symbols.items():
-    print(f" Fetching Max Weekly History from yfinance: {name}")
+    print(f"📥 Fetching Max Weekly History from yfinance: {name}")
     try:
-        w_df = yf.download(ticker, period="max", interval="1wk", progress=False)
+        w_df = yf.download(ticker, period="max", interval="1wk", progress=False, group_by="ticker")
         if not w_df.empty:
             if isinstance(w_df.columns, pd.MultiIndex):
-                w_df.columns = w_df.columns.get_level_values(0)
-            w_df = w_df.reset_index().rename(columns={'Date': 'DateTime'})
+                if ticker in w_df.columns.levels[0]:
+                    w_df = w_df[ticker]
+                else:
+                    w_df.columns = w_df.columns.get_level_values(0)
+            
+            w_df = w_df.dropna(subset=['Close'])
+            w_df = w_df.reset_index()
+            
+            w_df = w_df.rename(columns={'Date': 'DateTime', 'Datetime': 'DateTime'})
             w_df['DateTime'] = pd.to_datetime(w_df['DateTime']).dt.tz_localize(None)
             w_df['Instrument'] = name
             w_df['TimeFrame'] = '1wk'
             w_df['Source'] = 'yfinance'
+            
+            for col in ['Open', 'High', 'Low', 'Close']:
+                w_df[col] = pd.to_numeric(w_df[col])
+                
             w_df = w_df[['DateTime', 'Open', 'High', 'Low', 'Close', 'Instrument', 'TimeFrame', 'Source']]
             all_data_frames.append(w_df)
             print(f"✅ Retrieved {len(w_df)} weekly bars for {name}")
@@ -103,10 +124,13 @@ for name, ticker in yf_symbols.items():
 # ==========================================
 if all_data_frames:
     master_historical_df = pd.concat(all_data_frames, ignore_index=True)
+    
+    # Final scrubbing safety step: Drop any null structural entries before saving
+    master_historical_df = master_historical_df.dropna(subset=['DateTime', 'Open', 'Close'])
     master_historical_df = master_historical_df.sort_values(['Instrument', 'TimeFrame', 'DateTime'])
     
     output_path = os.path.join("data", "raw_hourly_history.csv")
     master_historical_df.to_csv(output_path, index=False)
-    print(f"\n🚀 SUCCESS: Database compiled with {len(master_historical_df)} total mixed rows.")
+    print(f"\n🚀 SUCCESS: Database cleanly compiled with {len(master_historical_df)} total mixed rows.")
 else:
     print("❌ Failure: No data could be gathered.")
