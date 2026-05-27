@@ -33,7 +33,7 @@ if API_KEY and not API_KEY.startswith("YOUR"):
         print(f"📥 Fetching Twelve Data hourly history: {name}")
         url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval=1h&outputsize=5000&apikey={API_KEY}"
         try:
-            response = requests.get(url, timeout=30).json()
+            response = requests.get(url, timeout=10).json()
             if "values" in response:
                 h_df = pd.DataFrame(response["values"])
                 h_df = h_df.rename(columns={"datetime": "DateTime", "open": "Open", "high": "High", "low": "Low", "close": "Close"})
