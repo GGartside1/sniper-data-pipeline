@@ -36,7 +36,7 @@ print(f" Starting Hourly Delta Ingestion Loop at {datetime.now()}")
 # ==========================================
 if API_KEY and not API_KEY.startswith("YOUR"):
     for name, ticker in twelve_symbols.items():
-        url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval=1h&outputsize=100&apikey={API_KEY}"
+        url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval=1h&outputsize=24&apikey={API_KEY}"
         try:
             response = requests.get(url, timeout=10).json()
             if "values" in response:
@@ -65,7 +65,7 @@ for asset_name in yf_hourly_targets:
     ticker = yf_symbols[asset_name]
     try:
         # Mirroring seed configuration perfectly
-        df = yf.download(ticker, period="7d", interval="1h", auto_adjust=False, progress=False, threads=False)
+        df = yf.download(ticker, period="1d", interval="1h", auto_adjust=False, progress=False, threads=False)
         if not df.empty:
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
