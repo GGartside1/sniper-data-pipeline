@@ -31,7 +31,7 @@ for name, ticker in twelve_symbols.items():
 # ==========================================
 for name, ticker in yf_symbols.items():
     try:
-        h_df = yf.download(ticker, period="2d", interval="1h", progress=False, group_by="ticker")
+        h_df = yf.download(ticker, period="7d", interval="1h", progress=False, group_by="ticker")
         
         if not h_df.empty:
             if isinstance(h_df.columns, pd.MultiIndex):
