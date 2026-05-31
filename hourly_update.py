@@ -1,9 +1,42 @@
+import os
+import pandas as pd
+import numpy as np
+import requests
+import yfinance as yf
+from datetime import datetime
+
+# --- CONFIGURATION ---
+API_KEY = os.getenv("TWELVE_DATA_API_KEY") 
+
+# Ensure these dictionaries are defined BEFORE the loops call them
+twelve_symbols = {
+    "EURUSD": "EUR/USD", "GBPUSD": "GBP/USD", "USDJPY": "USD/JPY",
+    "AUDUSD": "AUD/USD", "USDCAD": "USD/CAD", "USDCHF": "USD/CHF",
+}
+
+yf_symbols = {
+    "XAUUSD": "GC=F", "SPX": "ES=F", "DAX": "^GDAXI"
+}
+
+CSV_PATH = os.path.join("data", "raw_hourly_history.csv")
+
+if not os.path.exists(CSV_PATH):
+    raise FileNotFoundError(f"❌ Core database file not found at {CSV_PATH}. Please run the initial seed script first.")
+
+master_df = pd.read_csv(CSV_PATH)
+master_df['DateTime'] = pd.to_datetime(master_df['DateTime'], format='mixed')
+
+new_rows = []
+
+print(f" Starting Hourly Delta Ingestion Loop at {datetime.now()}")
+
+
 # ==========================================
 # 1. FETCH HOURLY FOREX DELTA (Twelve Data)
 # ==========================================
 for name, ticker in twelve_symbols.items():
     # FIX: Increase outputsize to 24 to cover any GitHub Actions scheduling delays
-    url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval=1h&outputsize=24&apikey={API_KEY}"
+    url = f"https://api.twelvedata.com/time_series?symbol={ticker}&interval=1h&outputsize=100&apikey={API_KEY}"
     try:
         response = requests.get(url).json()
         if "values" in response and len(response['values']) > 0:
