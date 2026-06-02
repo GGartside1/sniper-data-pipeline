@@ -1,0 +1,45 @@
+name: Weekly Levels Export
+
+on:
+  schedule:
+    # Runs every Monday at 04:30 AM UTC
+    - cron: '30 4 * * 1'
+  workflow_dispatch: # Allows you to manually trigger it via the GitHub UI anytime
+
+permissions:
+  contents: write
+
+jobs:
+  export_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Target Branch
+        uses: actions/checkout@v4
+        with:
+          # Forces the runner to look at your specific feature branch
+          ref: feat/sniper-pip-multipliers
+
+      - name: Set Up Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Snowflake Connector
+        run: pip install snowflake-connector-python
+
+      - name: Extract Levels from Snowflake
+        env:
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+        run: python export_weekly_levels.py
+
+      - name: Commit and Push Latest Levels
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add current_week_levels.json
+          
+          # Only commit and push if the values inside the json file actually changed
+          git diff-index --quiet HEAD || (git commit -m "🤖 Auto-Update: Weekly Anchor Levels [Skip CI]" && git push origin feat/sniper-pip-multipliers)
