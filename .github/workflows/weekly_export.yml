@@ -33,7 +33,9 @@ jobs:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-        run: python export_weekly_levels.py
+        run: |
+          mkdir -p Data  # creates the Data folder if it doesn't exist yet
+          python export_weekly_levels.py
 
       - name: Commit and Push Latest Levels
         run: |
