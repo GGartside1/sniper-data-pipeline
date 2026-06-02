@@ -68,7 +68,7 @@ def export_current_week_levels():
             }
         
         # Save explicitly as a clean JSON asset
-        with open('current_week_levels.json', 'w') as f:
+        with open('Data/current_week_levels.json', 'w') as f:
             json.dump(export_data, f, indent=4)
             
         print("✅ current_week_levels.json generated successfully using fct_sniper_levels definitions.")
