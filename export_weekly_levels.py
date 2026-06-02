@@ -18,18 +18,30 @@ def export_current_week_levels():
     cs = ctx.cursor()
     
     # Query to fetch the most recent metrics for each instrument
+# 1. Update the SQL query to target your exact dbt model outputs
     query = """
     WITH latest_anchor AS (
         SELECT 
             INSTRUMENT,
-            TRADING_WEEK,
-            PIP_MULTIPLIER,
-            WEEKLY_HIGH_LEVEL,
-            WEEKLY_LOW_LEVEL,
-            ROW_NUMBER() OVER (PARTITION BY INSTRUMENT ORDER BY TRADING_WEEK DESC) as rn
+            RECORD_WEEK,
+            CURRENT_WEEK_OPEN,
+            PIP_UNIT,
+            BASELINE_UP_MEAN_PRICE,
+            BASELINE_DN_PRICE,
+            UP_FAIL_90,
+            DN_FAIL_90,
+            ROW_NUMBER() OVER (PARTITION BY INSTRUMENT ORDER BY RECORD_WEEK DESC) as rn
         FROM SNIPER_DB.ANALYTICS.FCT_SNIPER_LEVELS
     )
-    SELECT INSTRUMENT, TRADING_WEEK, PIP_MULTIPLIER, WEEKLY_HIGH_LEVEL, WEEKLY_LOW_LEVEL
+    SELECT 
+        INSTRUMENT, 
+        RECORD_WEEK, 
+        CURRENT_WEEK_OPEN, 
+        PIP_UNIT,
+        BASELINE_UP_MEAN_PRICE, 
+        BASELINE_DN_PRICE, 
+        UP_FAIL_90, 
+        DN_FAIL_90
     FROM latest_anchor
     WHERE rn = 1;
     """
@@ -43,19 +55,23 @@ def export_current_week_levels():
             "levels": {}
         }
         
+        # 2. Map the data structure to match your exact columns
         for row in rows:
             export_data["levels"][row[0]] = {
                 "trading_week": str(row[1]),
-                "pip_multiplier": float(row[2]),
-                "high_level": float(row[3]),
-                "low_level": float(row[4])
+                "weekly_open": float(row[2]),
+                "unit_type": str(row[3]),
+                "baseline_up_mean": float(row[4]),
+                "baseline_dn_mean": float(row[5]),
+                "sniper_high_level_90": float(row[6]),
+                "sniper_low_level_90": float(row[7])
             }
         
         # Save explicitly as a clean JSON asset
         with open('current_week_levels.json', 'w') as f:
             json.dump(export_data, f, indent=4)
             
-        print("✅ current_week_levels.json generated successfully.")
+        print("✅ current_week_levels.json generated successfully using fct_sniper_levels definitions.")
         
     except Exception as e:
         print(f"❌ Export failed: {str(e)}")
