@@ -29,21 +29,25 @@ jobs:
     - name: Checkout Repository Code
       uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set Up Python Environment
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+        cache: 'pip' # <-- This caches dependencies so subsequent runs take seconds!
 
-    - name: Install Dependencies
+    # This step guarantees the runner virtual machine builds the correct environment
+    - name: Install Secure Pipeline Dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pandas numpy requests yfinance
+        pip install pandas numpy requests yfinance snowflake-connector-python
 
-    - name: Execute Incremental Update
+    - name: Execute Live Ingestion Script
       env:
         TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+        SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+        SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
       run: python hourly_update.py
-
+      
     - name: Commit and Push Delta Row Updates
       run: |
         git config --global user.name "GitHub Action Bot"
