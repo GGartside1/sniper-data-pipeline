@@ -1,0 +1,86 @@
+{
+    "last_updated": "2026-06-02 16:19:52",
+    "levels": {
+        "AUDUSD": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 0.71296,
+            "unit_type": "pips",
+            "baseline_up_mean": 0.7202510439138448,
+            "baseline_dn_mean": 0.7073261258941898,
+            "sniper_high_level_90": 0.7391097406762437,
+            "sniper_low_level_90": 0.701929387887861
+        },
+        "DAX": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 25181.269531,
+            "unit_type": "pts",
+            "baseline_up_mean": 25563.565063260274,
+            "baseline_dn_mean": 24650.745172223673,
+            "sniper_high_level_90": 26206.8698684887,
+            "sniper_low_level_90": 23646.935427185545
+        },
+        "EURUSD": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 1.16011,
+            "unit_type": "pips",
+            "baseline_up_mean": 1.1689240656417303,
+            "baseline_dn_mean": 1.1525626607821673,
+            "sniper_high_level_90": 1.1832133846827588,
+            "sniper_low_level_90": 1.1424795979065663
+        },
+        "GBPUSD": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 1.34329,
+            "unit_type": "pips",
+            "baseline_up_mean": 1.3547602008602302,
+            "baseline_dn_mean": 1.3350025077357088,
+            "sniper_high_level_90": 1.3707208507036013,
+            "sniper_low_level_90": 1.3176651809065196
+        },
+        "SPX": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 7540.25,
+            "unit_type": "pts",
+            "baseline_up_mean": 7657.768038324825,
+            "baseline_dn_mean": 7441.703085425684,
+            "sniper_high_level_90": 7891.68369437258,
+            "sniper_low_level_90": 7378.229646509832
+        },
+        "USDCAD": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 1.38193,
+            "unit_type": "pips",
+            "baseline_up_mean": 1.3914957029233073,
+            "baseline_dn_mean": 1.3733329859754029,
+            "sniper_high_level_90": 1.4140090095378368,
+            "sniper_low_level_90": 1.3627607357763547
+        },
+        "USDCHF": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 0.78476,
+            "unit_type": "pips",
+            "baseline_up_mean": 0.7919958736014641,
+            "baseline_dn_mean": 0.7768332966170991,
+            "sniper_high_level_90": 0.8083543690246756,
+            "sniper_low_level_90": 0.7609814246522814
+        },
+        "USDJPY": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 159.199,
+            "unit_type": "pips",
+            "baseline_up_mean": 160.63870503495033,
+            "baseline_dn_mean": 157.98952900624522,
+            "sniper_high_level_90": 161.39187285317834,
+            "sniper_low_level_90": 152.88992538759825
+        },
+        "XAUUSD": {
+            "trading_week": "2026-05-25",
+            "weekly_open": 4542.700195,
+            "unit_type": "pts",
+            "baseline_up_mean": 4653.2580765838065,
+            "baseline_dn_mean": 4393.324791536976,
+            "sniper_high_level_90": 4834.922686605905,
+            "sniper_low_level_90": 4114.417142085084
+        }
+    }
+}
