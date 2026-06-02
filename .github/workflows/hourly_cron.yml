@@ -33,7 +33,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        cache: 'pip' # <-- This caches dependencies so subsequent runs take seconds!
+        
 
     # This step guarantees the runner virtual machine builds the correct environment
     - name: Install Secure Pipeline Dependencies
