@@ -88,28 +88,32 @@ unit_multipliers AS (
     FROM forward_shifted_signals
 )
 
--- Final Step: Generate beautifully rounded final assets
+-- Final Step: Generate beautifully rounded final assets with CORRECTED sign directions
 SELECT 
     record_week,
     instrument,
     ROUND(current_week_open, round_scale) as current_week_open,
     pip_unit,
 
+    -- Upside remains additive
     ROUND(current_week_open * (1 + prior_up_mean), round_scale) as baseline_up_mean_price,
-    ROUND(current_week_open * (1 + prior_dn_mean), round_scale) as baseline_dn_price,
+    
+    -- 🛑 FIXED: Downside subtracts the mean return to project lower prices
+    ROUND(current_week_open * (1 - prior_dn_mean), round_scale) as baseline_dn_price,
 
     ROUND((current_week_open * prior_up_stddev) * pip_multiplier, 2) as up_1_sd_in_units,
     ROUND((current_week_open * prior_dn_stddev) * pip_multiplier, 2) as dn_1_sd_in_units,
 
-    -- Empirical Sniper Failure Execution Levels rounded safely
+    -- Rounded Empirical Sniper Upside Execution Levels (Additive)
     ROUND(current_week_open * (1 + (prior_up_mean + (q_up_50 * prior_up_stddev))), round_scale) as up_fail_50,
     ROUND(current_week_open * (1 + (prior_up_mean + (q_up_60 * prior_up_stddev))), round_scale) as up_fail_60,
     ROUND(current_week_open * (1 + (prior_up_mean + (q_up_75 * prior_up_stddev))), round_scale) as up_fail_75,
     ROUND(current_week_open * (1 + (prior_up_mean + (q_up_90 * prior_up_stddev))), round_scale) as up_fail_90,
 
-    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_50 * prior_dn_stddev))), round_scale) as dn_fail_50,
-    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_60 * prior_dn_stddev))), round_scale) as dn_fail_60,
-    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_75 * prior_dn_stddev))), round_scale) as dn_fail_75,
-    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_90 * prior_dn_stddev))), round_scale) as dn_fail_90
+    -- 🛑 FIXED: Empirical Sniper Downside Execution Levels (Subtractive)
+    ROUND(current_week_open * (1 - (prior_dn_mean + (q_dn_50 * prior_dn_stddev))), round_scale) as dn_fail_50,
+    ROUND(current_week_open * (1 - (prior_dn_mean + (q_dn_60 * prior_dn_stddev))), round_scale) as dn_fail_60,
+    ROUND(current_week_open * (1 - (prior_dn_mean + (q_dn_75 * prior_dn_stddev))), round_scale) as dn_fail_75,
+    ROUND(current_week_open * (1 - (prior_dn_mean + (q_dn_90 * prior_dn_stddev))), round_scale) as dn_fail_90
 
 FROM unit_multipliers
