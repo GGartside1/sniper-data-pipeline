@@ -15,19 +15,21 @@ WITH base_metrics AS (
     FROM {{ ref('fct_weekly_volatility') }}
 ),
 
--- Step 1: Calculate Realized Asymmetric Multipliers
+-- Step 1: Calculate Realized Asymmetric Multipliers ONLY for completed historical weeks
 realized_multipliers AS (
     SELECT 
         *,
         (up_ext - rolling_26wk_up_mean) / NULLIF(rolling_26wk_up_stddev, 0) as realized_up_sd,
         (dn_ext - rolling_26wk_dn_mean) / NULLIF(rolling_26wk_dn_stddev, 0) as realized_dn_sd
     FROM base_metrics
+    -- We don't want the live, fluctuating week polluting the historical quantile distributions
+    WHERE weekly_close IS NOT NULL 
 ),
 
--- Step 2: Compute Global Empirical Quantiles per instrument
+-- Step 2: Compute clean, static Global Empirical Quantiles per instrument
 empirical_quantiles AS (
     SELECT 
-        *,
+        instrument,
         PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY realized_up_sd ASC) OVER (PARTITION BY instrument) as q_up_50,
         PERCENTILE_CONT(0.60) WITHIN GROUP (ORDER BY realized_up_sd ASC) OVER (PARTITION BY instrument) as q_up_60,
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY realized_up_sd ASC) OVER (PARTITION BY instrument) as q_up_75,
@@ -38,27 +40,32 @@ empirical_quantiles AS (
         PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY realized_dn_sd DESC) OVER (PARTITION BY instrument) as q_dn_75,
         PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY realized_dn_sd DESC) OVER (PARTITION BY instrument) as q_dn_90
     FROM realized_multipliers
+    GROUP BY instrument, realized_up_sd, realized_dn_sd
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY instrument ORDER BY instrument) = 1
 ),
 
--- Step 3: Shift the historical profiles forward to map onto the active current week
+-- Step 3: Map the static profiles cleanly onto ALL weeks (including the active live anchor)
 forward_shifted_signals AS (
     SELECT 
-        record_week,
-        instrument,
-        true_weekly_open as current_week_open,
-        weekly_close,
+        b.record_week,
+        b.instrument,
+        b.true_weekly_open as current_week_open,
+        b.weekly_close,
         
-        LAG(rolling_26wk_up_mean, 1) OVER (PARTITION BY instrument ORDER BY record_week ASC) as prior_up_mean,
-        LAG(rolling_26wk_dn_mean, 1) OVER (PARTITION BY instrument ORDER BY record_week ASC) as prior_dn_mean,
-        LAG(rolling_26wk_up_stddev, 1) OVER (PARTITION BY instrument ORDER BY record_week ASC) as prior_up_stddev,
-        LAG(rolling_26wk_dn_stddev, 1) OVER (PARTITION BY instrument ORDER BY record_week ASC) as prior_dn_stddev,
+        -- Pull the distributions from the previous completed row anchor
+        LAG(b.rolling_26wk_up_mean, 1) OVER (PARTITION BY b.instrument ORDER BY b.record_week ASC) as prior_up_mean,
+        LAG(b.rolling_26wk_dn_mean, 1) OVER (PARTITION BY b.instrument ORDER BY b.record_week ASC) as prior_dn_mean,
+        LAG(b.rolling_26wk_up_stddev, 1) OVER (PARTITION BY b.instrument ORDER BY b.record_week ASC) as prior_up_stddev,
+        LAG(b.rolling_26wk_dn_stddev, 1) OVER (PARTITION BY b.instrument ORDER BY b.record_week ASC) as prior_dn_stddev,
         
-        q_up_50, q_up_60, q_up_75, q_up_90,
-        q_dn_50, q_dn_60, q_dn_75, q_dn_90
-    FROM empirical_quantiles
+        q.q_up_50, q.q_up_60, q.q_up_75, q.q_up_90,
+        q.q_dn_50, q.q_dn_60, q.q_dn_75, q.q_dn_90
+    FROM base_metrics b
+    LEFT JOIN empirical_quantiles q 
+        ON b.instrument = q.instrument
 ),
 
--- Step 4: Inject your exact dynamic Python asset multiplier logic
+-- Step 4: Setup dynamic multiplier pip scales and precise decimal round settings
 unit_multipliers AS (
     SELECT 
         *,
@@ -71,34 +78,38 @@ unit_multipliers AS (
         CASE 
             WHEN instrument LIKE '%SPX%' OR instrument LIKE '%DAX%' OR instrument LIKE '%XAUUSD%' THEN 'pts'
             ELSE 'pips' 
-        END as pip_unit
+        END as pip_unit,
+        
+        -- 2 Decimals for stock index instruments, 5 Decimals for FX and Spot Gold
+        CASE 
+            WHEN instrument LIKE '%SPX%' OR instrument LIKE '%DAX%' THEN 2
+            ELSE 5
+        END as round_scale
     FROM forward_shifted_signals
 )
 
--- Final Step: Output price configurations, absolute mean targets, and pip buffers
+-- Final Step: Generate beautifully rounded final assets
 SELECT 
     record_week,
     instrument,
-    current_week_open,
+    ROUND(current_week_open, round_scale) as current_week_open,
     pip_unit,
 
-    -- Volatility Means converted directly to target execution prices
-    current_week_open * (1 + prior_up_mean) as baseline_up_mean_price,
-    current_week_open * (1 + prior_dn_mean) as baseline_dn_price,
+    ROUND(current_week_open * (1 + prior_up_mean), round_scale) as baseline_up_mean_price,
+    ROUND(current_week_open * (1 + prior_dn_mean), round_scale) as baseline_dn_price,
 
-    -- 1 Standard Deviation value expressed cleanly in Pips or Points
-    (current_week_open * prior_up_stddev) * pip_multiplier as up_1_sd_in_units,
-    (current_week_open * prior_dn_stddev) * pip_multiplier as dn_1_sd_in_units,
+    ROUND((current_week_open * prior_up_stddev) * pip_multiplier, 2) as up_1_sd_in_units,
+    ROUND((current_week_open * prior_dn_stddev) * pip_multiplier, 2) as dn_1_sd_in_units,
 
-    -- Empirical Sniper Execution Levels
-    current_week_open * (1 + (prior_up_mean + (q_up_50 * prior_up_stddev))) as up_fail_50,
-    current_week_open * (1 + (prior_up_mean + (q_up_60 * prior_up_stddev))) as up_fail_60,
-    current_week_open * (1 + (prior_up_mean + (q_up_75 * prior_up_stddev))) as up_fail_75,
-    current_week_open * (1 + (prior_up_mean + (q_up_90 * prior_up_stddev))) as up_fail_90,
+    -- Empirical Sniper Failure Execution Levels rounded safely
+    ROUND(current_week_open * (1 + (prior_up_mean + (q_up_50 * prior_up_stddev))), round_scale) as up_fail_50,
+    ROUND(current_week_open * (1 + (prior_up_mean + (q_up_60 * prior_up_stddev))), round_scale) as up_fail_60,
+    ROUND(current_week_open * (1 + (prior_up_mean + (q_up_75 * prior_up_stddev))), round_scale) as up_fail_75,
+    ROUND(current_week_open * (1 + (prior_up_mean + (q_up_90 * prior_up_stddev))), round_scale) as up_fail_90,
 
-    current_week_open * (1 + (prior_dn_mean + (q_dn_50 * prior_dn_stddev))) as dn_fail_50,
-    current_week_open * (1 + (prior_dn_mean + (q_dn_60 * prior_dn_stddev))) as dn_fail_60,
-    current_week_open * (1 + (prior_dn_mean + (q_dn_75 * prior_dn_stddev))) as dn_fail_75,
-    current_week_open * (1 + (prior_dn_mean + (q_dn_90 * prior_dn_stddev))) as dn_fail_90
+    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_50 * prior_dn_stddev))), round_scale) as dn_fail_50,
+    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_60 * prior_dn_stddev))), round_scale) as dn_fail_60,
+    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_75 * prior_dn_stddev))), round_scale) as dn_fail_75,
+    ROUND(current_week_open * (1 + (prior_dn_mean + (q_dn_90 * prior_dn_stddev))), round_scale) as dn_fail_90
 
 FROM unit_multipliers

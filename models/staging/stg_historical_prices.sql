@@ -6,9 +6,15 @@ WITH raw_source AS (
 
 categorized_data AS (
     SELECT
-        -- 1. Standardize Timestamps & Dates
-        TRY_TO_DATE(DATETIME) as record_date,
-        TRY_TO_TIMESTAMP(DATETIME) as record_timestamp,
+        -- 1. Standardize Timestamps & Dates with explicit Timezone Mapping
+        CASE UPPER(TRIM(SOURCE))
+            WHEN 'TWELVEDATA' THEN CONVERT_TIMEZONE('Australia/Sydney', 'Europe/Stockholm', TRY_TO_TIMESTAMP(DATETIME))
+            WHEN 'YFINANCE'   THEN CONVERT_TIMEZONE('UTC', 'Europe/Stockholm', TRY_TO_TIMESTAMP(DATETIME))
+            ELSE TRY_TO_TIMESTAMP(DATETIME)
+        END as record_timestamp,
+
+        -- Derive the clean local date directly from our normalized timestamp
+        CAST(record_timestamp AS DATE) as record_date,
         
         -- 2. Clean up Text Strings
         UPPER(TRIM(INSTRUMENT)) as instrument,
@@ -28,8 +34,8 @@ categorized_data AS (
         CAST(LOW AS FLOAT) as low_price,
         CAST(CLOSE AS FLOAT) as close_price,
 
-        -- 5. Automatic Ingestion Metadata
-        CURRENT_TIMESTAMP() as dbt_processed_at
+        -- 5. Timezone-Aligned Ingestion Metadata (Forcing UTC runner time to Stockholm)
+        CONVERT_TIMEZONE('UTC', 'Europe/Stockholm', CURRENT_TIMESTAMP()) as dbt_processed_at
 
     FROM raw_source
     WHERE INSTRUMENT IS NOT NULL 
