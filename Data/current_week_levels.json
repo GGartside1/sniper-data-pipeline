@@ -1,12 +1,12 @@
 {
-    "last_updated": "2026-06-04 08:06:34",
+    "last_updated": "2026-06-04 08:43:04",
     "levels": {
         "AUDUSD": {
             "trading_week": "2026-06-01",
             "weekly_open": 0.71846,
             "unit_type": "pips",
             "baseline_up_mean": 0.72795,
-            "baseline_dn_mean": 0.72325,
+            "baseline_dn_mean": 0.71367,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 0.72702,
@@ -15,10 +15,10 @@
                     "fail_90": 0.74092
                 },
                 "downside": {
-                    "fail_50": 0.72362,
-                    "fail_60": 0.7214,
-                    "fail_75": 0.72048,
-                    "fail_90": 0.71898
+                    "fail_50": 0.7133,
+                    "fail_60": 0.71552,
+                    "fail_75": 0.71644,
+                    "fail_90": 0.71794
                 }
             }
         },
@@ -27,7 +27,7 @@
             "weekly_open": 1.16639,
             "unit_type": "pips",
             "baseline_up_mean": 1.17554,
-            "baseline_dn_mean": 1.17302,
+            "baseline_dn_mean": 1.15976,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 1.1748,
@@ -36,10 +36,10 @@
                     "fail_90": 1.18775
                 },
                 "downside": {
-                    "fail_50": 1.17115,
-                    "fail_60": 1.17021,
-                    "fail_75": 1.16802,
-                    "fail_90": 1.16562
+                    "fail_50": 1.16163,
+                    "fail_60": 1.16257,
+                    "fail_75": 1.16476,
+                    "fail_90": 1.16716
                 }
             }
         },
@@ -48,7 +48,7 @@
             "weekly_open": 1.34566,
             "unit_type": "pips",
             "baseline_up_mean": 1.3577,
-            "baseline_dn_mean": 1.35395,
+            "baseline_dn_mean": 1.33737,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 1.35823,
@@ -57,10 +57,10 @@
                     "fail_90": 1.37243
                 },
                 "downside": {
-                    "fail_50": 1.35127,
-                    "fail_60": 1.35015,
-                    "fail_75": 1.34543,
-                    "fail_90": 1.34428
+                    "fail_50": 1.34005,
+                    "fail_60": 1.34117,
+                    "fail_75": 1.34589,
+                    "fail_90": 1.34704
                 }
             }
         },
@@ -69,7 +69,7 @@
             "weekly_open": 7601.5,
             "unit_type": "pts",
             "baseline_up_mean": 7744.58,
-            "baseline_dn_mean": 7688.53,
+            "baseline_dn_mean": 7514.47,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 7715.24,
@@ -78,10 +78,10 @@
                     "fail_90": 7932.54
                 },
                 "downside": {
-                    "fail_50": 7662.5,
-                    "fail_60": 7647.26,
-                    "fail_75": 7635.31,
-                    "fail_90": 7619.29
+                    "fail_50": 7540.5,
+                    "fail_60": 7555.74,
+                    "fail_75": 7567.69,
+                    "fail_90": 7583.71
                 }
             }
         },
@@ -90,7 +90,7 @@
             "weekly_open": 1.37955,
             "unit_type": "pips",
             "baseline_up_mean": 1.38639,
-            "baseline_dn_mean": 1.38815,
+            "baseline_dn_mean": 1.37095,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 1.38444,
@@ -99,10 +99,10 @@
                     "fail_90": 1.3969
                 },
                 "downside": {
-                    "fail_50": 1.3865,
-                    "fail_60": 1.38588,
-                    "fail_75": 1.38273,
-                    "fail_90": 1.38109
+                    "fail_50": 1.3726,
+                    "fail_60": 1.37322,
+                    "fail_75": 1.37637,
+                    "fail_90": 1.37801
                 }
             }
         },
@@ -111,7 +111,7 @@
             "weekly_open": 0.78128,
             "unit_type": "pips",
             "baseline_up_mean": 0.78715,
-            "baseline_dn_mean": 0.78811,
+            "baseline_dn_mean": 0.77445,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 0.78588,
@@ -120,10 +120,10 @@
                     "fail_90": 0.79297
                 },
                 "downside": {
-                    "fail_50": 0.7868,
-                    "fail_60": 0.78508,
-                    "fail_75": 0.78359,
-                    "fail_90": 0.78283
+                    "fail_50": 0.77576,
+                    "fail_60": 0.77748,
+                    "fail_75": 0.77897,
+                    "fail_90": 0.77973
                 }
             }
         },
@@ -132,7 +132,7 @@
             "weekly_open": 159.29951,
             "unit_type": "pips",
             "baseline_up_mean": 160.48221,
-            "baseline_dn_mean": 160.7324,
+            "baseline_dn_mean": 157.86662,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 160.18264,
@@ -141,10 +141,10 @@
                     "fail_90": 161.28293
                 },
                 "downside": {
-                    "fail_50": 160.413,
-                    "fail_60": 160.10059,
-                    "fail_75": 159.68589,
-                    "fail_90": 159.50066
+                    "fail_50": 158.18602,
+                    "fail_60": 158.49843,
+                    "fail_75": 158.91313,
+                    "fail_90": 159.09836
                 }
             }
         },
@@ -153,7 +153,7 @@
             "weekly_open": 4566.2002,
             "unit_type": "pts",
             "baseline_up_mean": 4732.47553,
-            "baseline_dn_mean": 4708.14002,
+            "baseline_dn_mean": 4424.26037,
             "sniper_targets": {
                 "upside": {
                     "fail_50": 4736.30044,
@@ -162,10 +162,10 @@
                     "fail_90": 4950.25788
                 },
                 "downside": {
-                    "fail_50": 4687.49344,
-                    "fail_60": 4653.22515,
-                    "fail_75": 4598.51387,
-                    "fail_90": 4568.82907
+                    "fail_50": 4444.90695,
+                    "fail_60": 4479.17524,
+                    "fail_75": 4533.88652,
+                    "fail_90": 4563.57132
                 }
             }
         }
