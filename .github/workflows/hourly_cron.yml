@@ -7,9 +7,9 @@ on:
   schedule:
     # ----------------------------------------------------------------------
     # 1. SUNDAY OPENING WINDOW (UTC Time)
-    # Fires every hour at minute 0, between 21:00 and 23:00, strictly on Sunday (0)
+    # Fires every hour at minute 0, between 19:00 and 23:00, strictly on Sunday (0)
     # ----------------------------------------------------------------------
-    - cron: '0 21-23 * * 0'
+    - cron: '0 19-23 * * 0'
 
     # ----------------------------------------------------------------------
     # 2. STANDARD WEEKDAY RUNS (UTC Time)
