@@ -1,0 +1,9 @@
+USE ROLE ACCOUNTADMIN;
+USE DATABASE SNIPER_DB;
+USE SCHEMA RAW;
+
+-- Create an API security gateway for public GitHub access
+CREATE OR REPLACE API INTEGRATION GITHUB_API_INTEGRATION
+  API_PROVIDER = 'git_https_api'
+  API_ALLOWED_PREFIXES = ('https://github.com/GGartside1/')
+  ENABLED = TRUE;
