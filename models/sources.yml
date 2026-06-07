@@ -4,5 +4,7 @@ sources:
   - name: sniper_raw
     database: SNIPER_DB
     schema: RAW
+    description: "The Bronze Ingestion Zone containing raw, immutable streaming financial logs pushed directly via GitHub Actions orchestration."
     tables:
       - name: HISTORICAL_LEADERBOARD
+        description: "The primary ledger table tracking uncleaned multi-asset historical and hourly telemetry records."

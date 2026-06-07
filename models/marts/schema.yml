@@ -1,0 +1,89 @@
+version: 2
+
+models:
+  # ====================================================================
+  # 1. STAGING LAYER (SILVER VIEW)
+  # ====================================================================
+  - name: stg_historical_prices
+    description: "Silver staging model that normalizes asset classification, cleanses numerical pricing fields, and unifies fragmented API timezones into Europe/Stockholm standard time."
+    columns:
+      - name: record_timestamp
+        description: "The unified, Stockholm-mapped timestamp for the hourly market data entry."
+        tests:
+          - not_null
+      - name: instrument
+        description: "The standardized uppercase ticker symbol of the financial asset (e.g., AUDUSD, DAX)."
+        tests:
+          - not_null
+
+  # ====================================================================
+  # 2. INTERMEDIATE LAYER (SILVER VIEW)
+  # ====================================================================
+  - name: int_true_weekly_opens
+    description: "Chronological window filter isolating the absolute true starting market bar of the global trading week, resolving cross-border session kickoff discrepancies."
+    columns:
+      - name: execution_week
+        description: "The unified Monday date-anchor tracking the operational trading week."
+        tests:
+          - not_null
+      - name: true_weekly_open
+        description: "The physical price recorded at the true opening timestamp of the session."
+        tests:
+          - not_null
+
+  # ====================================================================
+  # 3. CORE ANALYTICAL VOLATILITY ENGINE (GOLD TABLE)
+  # ====================================================================
+  - name: fct_weekly_volatility
+    description: "Gold analytical table measuring structural intra-week maximum peak expansion ratios and compiling rolling 26-week moving averages and variance profiles per asset."
+    columns:
+      - name: record_week
+        description: "The Monday timestamp marking the start of the audited trading execution week."
+        tests:
+          - not_null
+      - name: instrument
+        description: "The financial asset ticker symbol."
+        tests:
+          - not_null
+      - name: true_weekly_open
+        description: "The physical starting execution price of the asset for the target week."
+      - name: weekly_close
+        description: "The dynamically derived true closing price pulled from the absolute final hourly bar of the trading week."
+      - name: weekly_expansion_return
+        description: "The maximum percentage return expansion realized during the week's trading cycle."
+      - name: up_ext
+        description: "Intra-week peak upside expansion footprint relative to the true opening index."
+      - name: dn_ext
+        description: "Intra-week peak downside expansion footprint relative to the true opening index."
+      - name: rolling_26wk_up_mean
+        description: "The historical 26-week moving average of upward mean expansion returns. (Contains cold-start nulls for initial records)."
+      - name: rolling_26wk_dn_mean
+        description: "The historical 26-week moving average of downward mean expansion returns. (Contains cold-start nulls for initial records)."
+      - name: rolling_26wk_up_stddev
+        description: "Standard deviation of upside variance calculated over a rolling 26-week lookback window."
+      - name: rolling_26wk_dn_stddev
+        description: "Standard deviation of downside variance calculated over a rolling 26-week lookback window."
+
+  # ====================================================================
+  # 4. FINAL SNIPER EXECUTION LAYER (GOLD TABLE)
+  # ====================================================================
+  - name: fct_sniper_levels
+    description: "The primary operational gold mart containing macro target bands calculated across empirical distribution quantiles."
+    columns:
+      - name: record_week
+        tests:
+          - not_null
+      - name: instrument
+        tests:
+          - not_null
+
+  # ====================================================================
+  # 5. DATA QUALITY ASSURANCE GATEWAY (DQA TABLE)
+  # ====================================================================
+  - name: assert_weekly_open_validation
+    description: "Automated Data Governance script applying ISO calendar tracking logic to detect and flag delayed opening candles or upstream API drops."
+    columns:
+      - name: data_integrity_status
+        description: "Validation flag separating sound data states from potential data gaps ('VALID' or 'WARNING')."
+        tests:
+          - not_null
