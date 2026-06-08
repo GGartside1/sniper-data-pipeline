@@ -1,66 +1,66 @@
 {
-    "last_updated": "2026-06-04 08:43:04",
+    "last_updated": "2026-06-08 04:35:00",
     "levels": {
         "AUDUSD": {
-            "trading_week": "2026-06-01",
-            "weekly_open": 0.71846,
+            "trading_week": "2026-06-08",
+            "weekly_open": 0.70418,
             "unit_type": "pips",
-            "baseline_up_mean": 0.72795,
-            "baseline_dn_mean": 0.71367,
+            "baseline_up_mean": 0.71306,
+            "baseline_dn_mean": 0.69879,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 0.72702,
-                    "fail_60": 0.73046,
-                    "fail_75": 0.73774,
-                    "fail_90": 0.74092
+                    "fail_50": 0.71176,
+                    "fail_60": 0.71325,
+                    "fail_75": 0.71891,
+                    "fail_90": 0.72479
                 },
                 "downside": {
-                    "fail_50": 0.7133,
-                    "fail_60": 0.71552,
-                    "fail_75": 0.71644,
-                    "fail_90": 0.71794
+                    "fail_50": 0.69837,
+                    "fail_60": 0.69787,
+                    "fail_75": 0.69693,
+                    "fail_90": 0.69046
                 }
             }
         },
         "EURUSD": {
-            "trading_week": "2026-06-01",
-            "weekly_open": 1.16639,
+            "trading_week": "2026-06-08",
+            "weekly_open": 1.15213,
             "unit_type": "pips",
-            "baseline_up_mean": 1.17554,
-            "baseline_dn_mean": 1.15976,
+            "baseline_up_mean": 1.16054,
+            "baseline_dn_mean": 1.14472,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 1.1748,
-                    "fail_60": 1.17733,
-                    "fail_75": 1.18014,
-                    "fail_90": 1.18775
+                    "fail_50": 1.15971,
+                    "fail_60": 1.16209,
+                    "fail_75": 1.16431,
+                    "fail_90": 1.17434
                 },
                 "downside": {
-                    "fail_50": 1.16163,
-                    "fail_60": 1.16257,
-                    "fail_75": 1.16476,
-                    "fail_90": 1.16716
+                    "fail_50": 1.14534,
+                    "fail_60": 1.14488,
+                    "fail_75": 1.14138,
+                    "fail_90": 1.13527
                 }
             }
         },
         "GBPUSD": {
-            "trading_week": "2026-06-01",
-            "weekly_open": 1.34566,
+            "trading_week": "2026-06-08",
+            "weekly_open": 1.33402,
             "unit_type": "pips",
-            "baseline_up_mean": 1.3577,
-            "baseline_dn_mean": 1.33737,
+            "baseline_up_mean": 1.34507,
+            "baseline_dn_mean": 1.32513,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 1.35823,
-                    "fail_60": 1.35955,
-                    "fail_75": 1.36174,
-                    "fail_90": 1.37243
+                    "fail_50": 1.34594,
+                    "fail_60": 1.34715,
+                    "fail_75": 1.3492,
+                    "fail_90": 1.35907
                 },
                 "downside": {
-                    "fail_50": 1.34005,
-                    "fail_60": 1.34117,
-                    "fail_75": 1.34589,
-                    "fail_90": 1.34704
+                    "fail_50": 1.32721,
+                    "fail_60": 1.32659,
+                    "fail_75": 1.32447,
+                    "fail_90": 1.3118
                 }
             }
         },
@@ -68,83 +68,83 @@
             "trading_week": "2026-06-01",
             "weekly_open": 7601.5,
             "unit_type": "pts",
-            "baseline_up_mean": 7744.58,
-            "baseline_dn_mean": 7514.47,
+            "baseline_up_mean": 7747.79,
+            "baseline_dn_mean": 7524.24,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 7715.24,
-                    "fail_60": 7744.85,
-                    "fail_75": 7806.97,
-                    "fail_90": 7932.54
+                    "fail_50": 7744.94,
+                    "fail_60": 7779.96,
+                    "fail_75": 7846.48,
+                    "fail_90": 8054.39
                 },
                 "downside": {
-                    "fail_50": 7540.5,
-                    "fail_60": 7555.74,
-                    "fail_75": 7567.69,
-                    "fail_90": 7583.71
+                    "fail_50": 7547.62,
+                    "fail_60": 7534.4,
+                    "fail_75": 7500.88,
+                    "fail_90": 7456.43
                 }
             }
         },
         "USDCAD": {
-            "trading_week": "2026-06-01",
-            "weekly_open": 1.37955,
+            "trading_week": "2026-06-08",
+            "weekly_open": 1.39403,
             "unit_type": "pips",
-            "baseline_up_mean": 1.38639,
-            "baseline_dn_mean": 1.37095,
+            "baseline_up_mean": 1.40163,
+            "baseline_dn_mean": 1.38634,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 1.38444,
-                    "fail_60": 1.38728,
-                    "fail_75": 1.39096,
-                    "fail_90": 1.3969
+                    "fail_50": 1.39977,
+                    "fail_60": 1.40275,
+                    "fail_75": 1.40678,
+                    "fail_90": 1.41205
                 },
                 "downside": {
-                    "fail_50": 1.3726,
-                    "fail_60": 1.37322,
-                    "fail_75": 1.37637,
-                    "fail_90": 1.37801
+                    "fail_50": 1.38836,
+                    "fail_60": 1.38818,
+                    "fail_75": 1.38315,
+                    "fail_90": 1.37494
                 }
             }
         },
         "USDCHF": {
-            "trading_week": "2026-06-01",
-            "weekly_open": 0.78128,
+            "trading_week": "2026-06-08",
+            "weekly_open": 0.796,
             "unit_type": "pips",
-            "baseline_up_mean": 0.78715,
-            "baseline_dn_mean": 0.77445,
+            "baseline_up_mean": 0.80276,
+            "baseline_dn_mean": 0.78943,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 0.78588,
-                    "fail_60": 0.7874,
-                    "fail_75": 0.79169,
-                    "fail_90": 0.79297
+                    "fail_50": 0.80169,
+                    "fail_60": 0.80301,
+                    "fail_75": 0.80772,
+                    "fail_90": 0.81095
                 },
                 "downside": {
-                    "fail_50": 0.77576,
-                    "fail_60": 0.77748,
-                    "fail_75": 0.77897,
-                    "fail_90": 0.77973
+                    "fail_50": 0.79057,
+                    "fail_60": 0.79027,
+                    "fail_75": 0.78736,
+                    "fail_90": 0.78329
                 }
             }
         },
         "USDJPY": {
-            "trading_week": "2026-06-01",
-            "weekly_open": 159.29951,
+            "trading_week": "2026-06-08",
+            "weekly_open": 160.2567,
             "unit_type": "pips",
-            "baseline_up_mean": 160.48221,
-            "baseline_dn_mean": 157.86662,
+            "baseline_up_mean": 161.48796,
+            "baseline_dn_mean": 158.86449,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 160.18264,
-                    "fail_60": 160.48557,
-                    "fail_75": 160.60195,
-                    "fail_90": 161.28293
+                    "fail_50": 161.50748,
+                    "fail_60": 161.53085,
+                    "fail_75": 161.76584,
+                    "fail_90": 162.1529
                 },
                 "downside": {
-                    "fail_50": 158.18602,
-                    "fail_60": 158.49843,
-                    "fail_75": 158.91313,
-                    "fail_90": 159.09836
+                    "fail_50": 159.25337,
+                    "fail_60": 158.50309,
+                    "fail_75": 158.10635,
+                    "fail_90": 156.20191
                 }
             }
         },
@@ -152,20 +152,20 @@
             "trading_week": "2026-06-01",
             "weekly_open": 4566.2002,
             "unit_type": "pts",
-            "baseline_up_mean": 4732.47553,
-            "baseline_dn_mean": 4424.26037,
+            "baseline_up_mean": 4729.40515,
+            "baseline_dn_mean": 4419.92365,
             "sniper_targets": {
                 "upside": {
-                    "fail_50": 4736.30044,
-                    "fail_60": 4768.2927,
-                    "fail_75": 4826.41359,
-                    "fail_90": 4950.25788
+                    "fail_50": 4698.55312,
+                    "fail_60": 4729.2601,
+                    "fail_75": 4799.64017,
+                    "fail_90": 4877.22522
                 },
                 "downside": {
-                    "fail_50": 4444.90695,
-                    "fail_60": 4479.17524,
-                    "fail_75": 4533.88652,
-                    "fail_90": 4563.57132
+                    "fail_50": 4418.60601,
+                    "fail_60": 4380.29969,
+                    "fail_75": 4321.38277,
+                    "fail_90": 4029.61964
                 }
             }
         }
