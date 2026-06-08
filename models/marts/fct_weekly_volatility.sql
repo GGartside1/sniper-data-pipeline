@@ -1,7 +1,7 @@
 {{ config(materialized='table') }}
 
 WITH true_opens AS (
-    -- Step 1: Establish our anchor definitions cleanly from our intermediate model
+    -- Step 1: Establish anchor definitions cleanly from our intermediate model
     SELECT 
         execution_week,
         instrument,
@@ -12,15 +12,16 @@ WITH true_opens AS (
     FROM {{ ref('int_true_weekly_opens') }}
 ),
 
-weekly_hourly_metrics AS (
-    -- Step 2: Extract highs, lows, AND the true closing price from the final hourly bar of the week
+weekly_metrics_aggregated AS (
+    -- Step 2: Grab structural extremes and the true weekly close using a QUALIFY filter to avoid GROUP BY pollution
     SELECT 
         o.execution_week,
         o.instrument,
-        MAX(s.high_price) as weekly_max_high,
-        MIN(s.low_price) as weekly_max_low,
+        -- Global aggregates across the partitioned timeframe window
+        MAX(s.high_price) OVER (PARTITION BY o.instrument, o.execution_week) as weekly_max_high,
+        MIN(s.low_price) OVER (PARTITION BY o.instrument, o.execution_week) as weekly_max_low,
         
-        -- Grab the absolute last close price of the week
+        -- Exact final close price of the week
         LAST_VALUE(s.close_price) OVER (
             PARTITION BY o.instrument, o.execution_week 
             ORDER BY s.record_timestamp ASC
@@ -33,19 +34,8 @@ weekly_hourly_metrics AS (
         AND s.record_timestamp >= o.true_open_timestamp
         AND s.record_timestamp < DATEADD(day, 7, o.true_open_timestamp)
     WHERE s.timeframe = '1h'
-    GROUP BY o.execution_week, o.instrument, s.close_price, s.record_timestamp
-),
-
-weekly_extremes_collapsed AS (
-    -- Deduplicate grouped metrics down to one clean row per instrument per week anchor
-    SELECT
-        execution_week,
-        instrument,
-        MAX(weekly_max_high) as weekly_max_high,
-        MIN(weekly_max_low) as weekly_max_low,
-        MAX(true_weekly_close) as true_weekly_close
-    FROM weekly_hourly_metrics
-    GROUP BY execution_week, instrument
+    -- Isolate exactly 1 row per instrument per week containing all historical metrics
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY o.instrument, o.execution_week ORDER BY s.record_timestamp DESC) = 1
 ),
 
 joined_pipeline AS (
@@ -58,12 +48,12 @@ joined_pipeline AS (
         o.true_weekly_open,
         e.true_weekly_close,
         
-        -- Intra-week peak expansion returns (Captures the full structural footprint)
-        (e.weekly_max_high - o.true_weekly_open) / NULLIF(o.true_weekly_open, 0) as up_expansion_return,
-        (o.true_weekly_open - e.weekly_max_low) / NULLIF(o.true_weekly_open, 0) as dn_expansion_return
+        -- Intra-week peak expansion returns (Captures the full absolute structural footprint)
+        GREATEST(e.weekly_max_high - o.true_weekly_open, 0) / NULLIF(o.true_weekly_open, 0) as up_expansion_return,
+        GREATEST(o.true_weekly_open - e.weekly_max_low, 0) / NULLIF(o.true_weekly_open, 0) as dn_expansion_return
         
     FROM true_opens o
-    LEFT JOIN weekly_extremes_collapsed e
+    LEFT JOIN weekly_metrics_aggregated e
         ON o.execution_week = e.execution_week 
        AND o.instrument = e.instrument
 ),
@@ -75,31 +65,31 @@ calculated_metrics AS (
         asset_class,
         api_provider,
         true_weekly_open,
-        true_weekly_close as weekly_close, -- 👈 Dynamically derived weekly close replaces the old seed!
+        true_weekly_close as weekly_close,
         
-        up_expansion_return as weekly_expansion_return,
         up_expansion_return as up_ext,
         dn_expansion_return as dn_ext,
 
-        -- 26-week distribution profiles
+        -- 🛡️ FIXED: 26-week distribution profiles (Strictly 25 preceding rows + 1 preceding row = 26 data points)
         AVG(up_expansion_return) OVER (
-            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 26 PRECEDING AND 1 PRECEDING
+            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 25 PRECEDING AND 1 PRECEDING
         ) as rolling_26wk_up_mean,
         
         AVG(dn_expansion_return) OVER (
-            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 26 PRECEDING AND 1 PRECEDING
+            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 25 PRECEDING AND 1 PRECEDING
         ) as rolling_26wk_dn_mean,
 
         STDDEV(up_expansion_return) OVER (
-            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 26 PRECEDING AND 1 PRECEDING
+            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 25 PRECEDING AND 1 PRECEDING
         ) as rolling_26wk_up_stddev,
         
         STDDEV(dn_expansion_return) OVER (
-            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 26 PRECEDING AND 1 PRECEDING
+            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 25 PRECEDING AND 1 PRECEDING
         ) as rolling_26wk_dn_stddev,
 
+        -- Keep an un-shifted stddev metric/filtering global outliers out at the final step
         STDDEV(up_expansion_return) OVER (
-            PARTITION BY instrument ORDER BY execution_week ASC ROWS BETWEEN 26 PRECEDING AND 1 PRECEDING
+            PARTITION BY instrument ORDER BY execution_week ASC
         ) as raw_global_stddev
 
     FROM joined_pipeline
@@ -112,7 +102,6 @@ SELECT
     api_provider,
     true_weekly_open,
     weekly_close,
-    weekly_expansion_return,
     up_ext,
     dn_ext,
     rolling_26wk_up_mean,
